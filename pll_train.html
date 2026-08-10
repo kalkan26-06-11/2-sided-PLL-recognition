@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>PLL二面判断トレーナー</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            background: #222;
+            color: #fff;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        h2 {
+            margin: 5px 0 10px 0;
+            font-size: 20px;
+        }
+        canvas {
+            background: #222;
+            margin: 5px 0;
+            border-radius: 6px;
+        }
+        
+        /* スタート／ストップボタンを回答タイルの下に画面幅いっぱいで配置 */
+        button#actionBtn {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            margin: 5px 0;
+            transition: 0.2s;
+            box-sizing: border-box;
+        }
+        button#actionBtn:hover { background: #0b5ed7; }
+        button#actionBtn.stop-state {
+            background: #dc3545;
+        }
+        button#actionBtn.stop-state:hover {
+            background: #bb2d3b;
+        }
+
+        button {
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            margin: 5px;
+            transition: 0.2s;
+        }
+        button:hover { background: #0b5ed7; }
+
+        .secondary-btn {
+            background: #6c757d;
+            padding: 3px 8px;
+            font-size: 13px;
+            font-weight: normal;
+        }
+        .secondary-btn:hover { background: #5a6268; }
+        
+        /* タイム表示を小さくしてキューブの右上に配置 */
+        .cube-container {
+            position: relative;
+            display: inline-block;
+            margin: 0px 0;
+        }
+        #timerDisplay {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: monospace;
+            letter-spacing: 1px;
+            color: #4ade80;
+            border: 1px solid #444;
+        }
+        #timerDisplay.hidden {
+            display: none;
+        }
+
+        #info { 
+            margin: 0px 0; 
+            font-size: 14px; 
+            font-weight: bold; 
+            color: #ffeb3b; 
+            min-height: 24px;
+            line-height: 21px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+        }
+        .settings-section {
+            text-align: left;
+            background: #2a2a2a;
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        /* アコーディオン関連のスタイル（アニメーションなし） */
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .accordion-arrow {
+            font-size: 12px;
+        }
+        .accordion-content {
+            display: none; /* 初期状態は非表示 */
+            flex-direction: column;
+            gap: 10px;
+        }
+        .accordion-content.open {
+            display: flex; /* パッと開く（アニメーションなし） */
+            margin-top: 10px;
+        }
+
+        .dashboard-box {
+            display: flex;
+            justify-content: space-around;
+            background: #333;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-size: 13px;
+        }
+        .dash-item span {
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+
+        .cross-color-picker {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+        .cross-box {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: 2px solid #000;
+            color: #000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 15px;
+            user-select: none;
+            transition: 0.2s;
+        }
+        .cross-box.selected {
+            border-color: #000;
+            box-shadow: 0 0 5px rgba(0,0,0,0.8);
+        }
+
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .perm-tile {
+            background: #2e2e2e;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            padding: 6px;
+            cursor: pointer;
+            text-align: center;
+            user-select: none;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+        .perm-tile.selected {
+            border-color: #fff;
+            background: #2e2e2e;
+        }
+        .perm-tile .tile-name {
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 2px;
+            color: #fff;
+        }
+        .perm-tile .tile-stat {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 1px;
+            line-height: 1.2;
+        }
+
+        .tile-canvas {
+            background: #111;
+            border-radius: 3px;
+        }
+        
+        .select-tile-canvas {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .answer-tile-canvas {
+            width: 45px;
+            height: 45px;
+        }
+
+        .answer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+            gap: 2px;
+            margin-top: 2px;
+        }
+        .answer-tile {
+            background: #2e2e2e;
+            border: 2px solid #444;
+            border-radius: 6px;
+            padding: 6px;
+            cursor: pointer;
+            text-align: center;
+            user-select: none;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .answer-tile:hover {
+            border-color: #0d6efd;
+            background: #353535;
+        }
+        .answer-tile span {
+            font-size: 15px;
+            font-weight: bold;
+            margin-top: 1px;
+            color: #fff;
+        }
+
+        .corner-dot {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #444;
+            transition: 0.2s;
+        }
+        .corner-dot.active {
+            background: #fff;
+            box-shadow: 0 0 3px #fff;
+        }
+        .dot-tl { top: 4px; left: 4px; }       
+        .dot-tr { top: 4px; right: 4px; }      
+        .dot-bl { bottom: 50px; left: 4px; }   
+        .dot-br { bottom: 50px; right: 4px; }  
+
+        #modalOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .direction-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 15px 0;
+        }
+        .dir-item {
+            background: #2e2e2e;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            transition: 0.2s;
+        }
+        .dir-item.active {
+            border-color: #fff;
+            background: #2e2e2e;
+        }
+        .dir-item canvas {
+            width: 90px;
+            height: 80px;
+            background: #111;
+        }
+        .dir-item .dir-name {
+            font-size: 14px;
+            color: #ccc;
+            font-weight: bold;
+        }
+        .dir-item .dir-stat {
+            font-size: 13px;
+            color: #aaa;
+            line-height: 1.2;
+        }
+
+        #statsModalOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+        }
+        .stats-modal-content {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            width: 95%;
+            max-width: 520px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .stats-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .stats-tab-btn {
+            flex: 1;
+            padding: 8px;
+            font-size: 13px;
+            background: #444;
+            color: #aaa;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .stats-tab-btn.active {
+            background: #0d6efd;
+            color: white;
+            font-weight: bold;
+        }
+        .stats-table-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 90vh;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #222;
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+        .stats-table th, .stats-table td {
+            padding: 8px;
+            border-bottom: 1px solid #333;
+            vertical-align: middle;
+        }
+        .stats-table th {
+            background: #2a2a2a;
+            color: #ffeb3b;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            cursor: pointer;
+            user-select: none;
+        }
+        .stats-table th:hover {
+            background: #3a3a3a;
+        }
+        .stats-table th .sort-arrow {
+            font-size: 6px;
+            margin-left: 2px;
+        }
+        .stats-table tr:hover {
+            background: #2a2a2a;
+        }
+        .table-canvas {
+            width: 40px;
+            height: 40px;
+            background: #111;
+            border-radius: 3px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>PLL 二面判断トレーナー</h2>
+        
+        <div class="settings-section">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong>総合成績</strong>
+                <div>
+                    <button class="secondary-btn" onclick="openStatsModal()" style="background: #0d6efd; margin-right: 5px;">成績一覧を見る</button>
+                    <button class="secondary-btn" onclick="resetStatsData()" style="background: #a94442;">リセット</button>
+                </div>
+            </div>
+            <div class="dashboard-box">
+                <div class="dash-item">解答数: <span id="dashTotal">0</span>回</div>
+                <div class="dash-item">正答率: <span id="dashRate">0%</span></div>
+                <div class="dash-item">AvgTime: <span id="dashTime">0.00</span>s</div>
+            </div>
+        </div>
+
+        <!-- 3つの設定項目をまとめたアコーディオン枠 -->
+        <div class="settings-section">
+            <div class="accordion-header" onclick="toggleAccordion()">
+                <span>⚙️ 設定</span>
+                <span id="accordionArrow" class="accordion-arrow">▼ 閉じる</span>
+            </div>
+            <div id="accordionContent" class="accordion-content open">
+                <!-- 1. タイマー表示切替 -->
+                <div style="padding-top: 5px; border-top: 1px solid #444;">
+                    <label style="font-size: 14px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="timerToggle" checked onchange="toggleTimerVisibility()"> <strong>タイマー表示</strong>
+                    </label>
+                </div>
+
+                <!-- 2. クロス色選択 -->
+                <div>
+                    <strong style="font-size: 14px;">Cross Colors:</strong>
+                    <div class="cross-color-picker" id="crossColorPicker" style="margin-top: 5px;"></div>
+                </div>
+
+                <!-- 3. 出題Perm選択 -->
+                <div>
+                    <div style="margin-bottom: 5px; display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            <strong style="font-size: 14px;">出題するPermの選択:</strong>
+                            <div style="font-size: 12px; color: #aaa; margin-top: 2px;">(四隅のドット＝4方向)</div>
+                        </div>
+                        <div>
+                            <button class="secondary-btn" onclick="toggleAllPerms(true)">全て選択</button>
+                            <button class="secondary-btn" onclick="toggleAllPerms(false)">全て解除</button>
+                        </div>
+                    </div>
+                    <div id="tileGrid" class="tile-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- キューブ画像と小さめのタイム表示（右上） -->
+        <div class="cube-container">
+            <canvas id="cubeCanvas" width="240" height="150"></canvas>
+            <div id="timerDisplay">0.00s</div>
+        </div>
+        
+        <div id="info"></div>
+
+        <!-- 回答用タイル群 -->
+        <div class="settings-section">
+            <div id="answerGrid" class="answer-grid"></div>
+        </div>
+
+        <!-- スタート／ストップボタン（回答タイルの下に画面幅いっぱいで配置） -->
+        <div>
+            <button id="actionBtn" onclick="onActionButtonClick()">Start!</button>
+        </div>
+    </div>
+
+    <!-- 向き選択モーダル -->
+    <div id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 id="modalTitle" style="margin-top:0;">Perm 向き選択</h3>
+            <div style="font-size: 14px; color: #aaa; margin-bottom: 5px;">出題させたい向きをタップして切り替えてください</div>
+            <div style="margin-bottom: 10px;">
+                <button class="secondary-btn" onclick="toggleModalDirections(true)">全て選択</button>
+                <button class="secondary-btn" onclick="toggleModalDirections(false)">全て解除</button>
+            </div>
+            <div id="directionGrid" class="direction-grid"></div>
+            <button onclick="closeModal()">閉じる</button>
+        </div>
+    </div>
+
+    <!-- 成績一覧モーダル -->
+    <div id="statsModalOverlay" onclick="closeStatsModal(event)">
+        <div class="stats-modal-content" onclick="event.stopPropagation()">
+            <h3 style="margin-top:0; margin-bottom:10px;">成績一覧</h3>
+            <div class="stats-tabs">
+                <button class="stats-tab-btn active" id="tabOverallBtn" onclick="switchStatsTab('overall')">全体一覧 (21種)</button>
+                <button class="stats-tab-btn" id="tabDirBtn" onclick="switchStatsTab('direction')">向き別詳細 (84種)</button>
+            </div>
+            <div class="stats-table-container">
+                <div id="statsTableContent"></div>
+            </div>
+            <button onclick="closeStatsModal()" style="margin-top:15px; padding:6px 16px; font-size:14px;">閉じる</button>
+        </div>
+    </div>
+
+    <script>
+        const pllDatabase = {
+            "Aa-Perm": "2(3)(3)(4)(4)2314(1)2(1)",
+            "Ab-Perm": "1(3)(3)(4)(4)1(2)1(2)324",
+            "E-Perm":  "2(3)4(1)4(3)4(1)2(3)2(1)",
+            "F-Perm":  "21(3)(4)(4)(4)(1)32321",
+            "Ga-Perm": "213(4)3(4)1(2)(2)341",
+            "Gb-Perm": "243(4)2(4)1323(1)(1)",
+            "Gc-Perm": "(2)(2)3(4)1(4)132341",
+            "Gd-Perm": "213(4)2(4)142(3)(3)1",
+            "H-Perm":  "(4)(2)(4)(1)(3)(1)(2)(4)(2)(3)(1)(3)",
+            "Ja-Perm": "223(4)(4)(4)(1)(1)2331",
+            "Jb-Perm": "2(3)(3)(4)(4)(4)122311",
+            "Na-Perm": "4(2)(2)3(1)(1)2(4)(4)1(3)(3)",
+            "Nb-Perm": "(2)(2)4(1)(1)3(4)(4)2(3)(3)1",
+            "Ra-Perm": "243(4)3(4)(1)(1)2321",
+            "Rb-Perm": "2(3)(3)(4)1(4)142321",
+            "T-Perm":  "2(3)(3)(4)2(4)(1)(1)2341",
+            "Ua-Perm": "(4)(4)(4)1(2)12(3)23(1)3",
+            "Ub-Perm": "(4)(4)(4)1(3)12(1)23(2)3",
+            "V-Perm":  "(2)(4)(4)(1)(1)(3)432321",
+            "Y-Perm":  "341234(1)(1)34(2)(2)",
+            "Z-Perm":  "(3)(2)(3)(4)(1)(4)(1)(4)(1)(2)(3)(2)"
+        };
+
+        const COLORS = {
+            white:  { hex: '#ffffff', opp: 'yellow' },
+            yellow: { hex: '#ffd700', opp: 'white' },
+            blue:   { hex: '#00a2ff', opp: 'green' },
+            green:  { hex: '#00cc66', opp: 'blue' },
+            red:    { hex: '#ff3333', opp: 'orange' },
+            orange: { hex: '#ff8800', opp: 'red' }
+        };
+
+        const STROKE_COLOR = '#111111';
+        let activeCrossColors = Object.keys(COLORS);
+
+        let permStates = {};
+        for (let permName in pllDatabase) {
+            permStates[permName] = [true, true, true, true];
+        }
+
+        let statsData = JSON.parse(localStorage.getItem('pll_trainer_stats')) || {};
+
+        let isRunning = false;
+        let startTime = 0;
+        let timerInterval = null;
+        let elapsedSeconds = 0;
+        let currentProblem = null;
+        let currentStatsTab = 'overall';
+
+        let currentSortColumn = 'name';
+        let currentSortAsc = true;
+
+        // アコーディオンの開閉処理（アニメーションなし）
+        function toggleAccordion() {
+            const content = document.getElementById('accordionContent');
+            const arrow = document.getElementById('accordionArrow');
+            content.classList.toggle('open');
+            if (content.classList.contains('open')) {
+                arrow.innerText = '▼ 閉じる';
+            } else {
+                arrow.innerText = '▶ 開く';
+            }
+        }
+
+        function saveStats() {
+            localStorage.setItem('pll_trainer_stats', JSON.stringify(statsData));
+        }
+
+        function resetStatsData() {
+            if (confirm("すべての成績データをリセットしますか？")) {
+                statsData = {};
+                localStorage.removeItem('pll_trainer_stats');
+                updateDashboard();
+                initTileGrid();
+                if (currentModalPerm) renderModalDirections();
+                if (document.getElementById('statsModalOverlay').style.display === 'flex') {
+                    renderStatsTable();
+                }
+                alert("成績をリセットしました。");
+            }
+        }
+
+        function getPermCombinedStats(permName) {
+            let total = 0;
+            let correct = 0;
+            let totalTime = 0;
+            for (let i = 0; i < 4; i++) {
+                const key = `${permName}_dir${i}`;
+                if (statsData[key]) {
+                    total += statsData[key].total;
+                    correct += statsData[key].correct;
+                    totalTime += statsData[key].totalTime;
+                }
+            }
+            if (total === 0) return null;
+            const rate = Math.round((correct / total) * 100);
+            const avgTime = correct > 0 ? (totalTime / correct).toFixed(2) : "0.00";
+            return { total, correct, rate, avgTime: parseFloat(avgTime) };
+        }
+
+        function updateDashboard() {
+            let totalTrials = 0;
+            let totalCorrect = 0;
+            let totalTimeSum = 0;
+            let correctCountForTime = 0;
+
+            for (let key in statsData) {
+                totalTrials += statsData[key].total;
+                totalCorrect += statsData[key].correct;
+                totalTimeSum += statsData[key].totalTime;
+                correctCountForTime += statsData[key].correct;
+            }
+
+            const rate = totalTrials > 0 ? Math.round((totalCorrect / totalTrials) * 100) : 0;
+            const avgTime = correctCountForTime > 0 ? (totalTimeSum / correctCountForTime).toFixed(2) : "0.00";
+
+            document.getElementById('dashTotal').innerText = totalTrials;
+            document.getElementById('dashRate').innerText = `${rate}%`;
+            document.getElementById('dashTime').innerText = avgTime;
+        }
+
+        function initCrossColorPicker() {
+            const picker = document.getElementById('crossColorPicker');
+            picker.innerHTML = "";
+            
+            for (let colorName in COLORS) {
+                const box = document.createElement('div');
+                box.className = 'cross-box selected';
+                box.style.backgroundColor = COLORS[colorName].hex;
+                box.dataset.color = colorName;
+                box.innerHTML = "✓";
+
+                box.onclick = function() {
+                    const isSelected = this.classList.contains('selected');
+                    const currentSelectedCount = picker.querySelectorAll('.cross-box.selected').length;
+                    if (isSelected && currentSelectedCount <= 1) {
+                        alert("クロス色は少なくとも1つ選択してください。");
+                        return;
+                    }
+
+                    if (isSelected) {
+                        this.classList.remove('selected');
+                        this.innerHTML = "";
+                    } else {
+                        this.classList.add('selected');
+                        this.innerHTML = "✓";
+                    }
+                    updateActiveCrossColors();
+                };
+                picker.appendChild(box);
+            }
+            updateActiveCrossColors();
+        }
+
+        function updateActiveCrossColors() {
+            const selectedBoxes = document.querySelectorAll('.cross-box.selected');
+            activeCrossColors = Array.from(selectedBoxes).map(box => box.dataset.color);
+        }
+
+        function initTileGrid() {
+            const grid = document.getElementById('tileGrid');
+            grid.innerHTML = "";
+
+            for (let permName in pllDatabase) {
+                const tile = document.createElement('div');
+                tile.className = 'perm-tile';
+                tile.dataset.perm = permName;
+
+                const dotClasses = ['dot-tl', 'dot-tr', 'dot-bl', 'dot-br'];
+                for (let i = 0; i < 4; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = `corner-dot ${dotClasses[i]}`;
+                    tile.appendChild(dot);
+                }
+
+                updateTileVisual(tile, permName);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 60;
+                canvas.height = 60;
+                canvas.className = 'tile-canvas select-tile-canvas';
+                drawMiniPreview(canvas, pllDatabase[permName], 0, false);
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'tile-name';
+                nameDiv.innerText = permName.replace('-Perm', '');
+
+                const statDiv = document.createElement('div');
+                statDiv.className = 'tile-stat';
+                const stats = getPermCombinedStats(permName);
+                if (stats !== null) {
+                    statDiv.innerHTML = `正答率:${stats.rate}%<br>AvgTime:${stats.avgTime.toFixed(2)}s`;
+                } else {
+                    statDiv.innerHTML = `---<br>---`;
+                }
+
+                tile.appendChild(canvas);
+                tile.appendChild(nameDiv);
+                tile.appendChild(statDiv);
+
+                tile.onclick = function(e) {
+                    openModal(permName);
+                };
+
+                grid.appendChild(tile);
+            }
+        }
+
+        function initAnswerGrid() {
+            const grid = document.getElementById('answerGrid');
+            grid.innerHTML = "";
+
+            for (let permName in pllDatabase) {
+                const tile = document.createElement('div');
+                tile.className = 'answer-tile';
+                tile.dataset.perm = permName;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 45;
+                canvas.height = 45;
+                canvas.className = 'tile-canvas answer-tile-canvas';
+                drawMiniPreview(canvas, pllDatabase[permName], 0, true);
+
+                const label = document.createElement('span');
+                label.innerText = permName.replace('-Perm', '');
+
+                tile.appendChild(canvas);
+                tile.appendChild(label);
+
+                tile.onclick = function() {
+                    handleAnswer(permName, tile);
+                };
+
+                grid.appendChild(tile);
+            }
+        }
+
+        function updateTileVisual(tile, permName) {
+            const states = permStates[permName];
+            const hasActiveDir = states.some(val => val);
+            
+            if (hasActiveDir) {
+                tile.classList.add('selected');
+            } else {
+                tile.classList.remove('selected');
+            }
+
+            const dots = tile.querySelectorAll('.corner-dot');
+            for (let i = 0; i < 4; i++) {
+                if (states[i]) {
+                    dots[i].classList.add('active');
+                } else {
+                    dots[i].classList.remove('active');
+                }
+            }
+        }
+
+        let currentModalPerm = null;
+
+        function openModal(permName) {
+            currentModalPerm = permName;
+            document.getElementById('modalTitle').innerText = `${permName} の向き選択`;
+            renderModalDirections();
+            document.getElementById('modalOverlay').style.display = 'flex';
+        }
+
+        function renderModalDirections() {
+            const dirGrid = document.getElementById('directionGrid');
+            dirGrid.innerHTML = "";
+
+            const targetData = pllDatabase[currentModalPerm];
+            const cleanData = targetData.replace(/[()]/g, '');
+            const mappedIndices = [0, 9, 3, 6];
+
+            const yellowSideHexMap = {  
+                '1': '#ff8800', 
+                '2': '#00a2ff', 
+                '3': '#ff3333',
+                '4': '#00cc66'  
+            };
+            const uHex = COLORS['yellow'].hex;
+            const defaultGray = '#555555';
+
+            for (let i = 0; i < 4; i++) {
+                const isActive = permStates[currentModalPerm][i];
+                const dirItem = document.createElement('div');
+                dirItem.className = `dir-item ${isActive ? 'active' : ''}`;
+                dirItem.dataset.dirIndex = i;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 90;
+                canvas.height = 80;
+
+                let rawSlice = "";
+                const startIdx = mappedIndices[i];
+                for (let j = 0; j < 6; j++) {
+                    rawSlice += cleanData[(startIdx + j) % 12];
+                }
+
+                const fSideNums = rawSlice.slice(0, 3);
+                const rSideNums = rawSlice.slice(3, 6);
+
+                const uGrid = [[uHex,uHex,uHex],[uHex,uHex,uHex],[uHex,uHex,uHex]];
+                
+                const fGrid = [
+                    [ yellowSideHexMap[fSideNums[0]], yellowSideHexMap[fSideNums[1]], yellowSideHexMap[fSideNums[2]] ],
+                    [ defaultGray, defaultGray, defaultGray ],
+                    [ defaultGray, defaultGray, defaultGray ]
+                ];
+                const rGrid = [
+                    [ yellowSideHexMap[rSideNums[0]], yellowSideHexMap[rSideNums[1]], yellowSideHexMap[rSideNums[2]] ],
+                    [ defaultGray, defaultGray, defaultGray ],
+                    [ defaultGray, defaultGray, defaultGray ]
+                ];
+
+                drawSpecificIsometricCube(canvas, uGrid, fGrid, rGrid, 11, 45, 38);
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'dir-name';
+                nameSpan.innerText = `向き ${i + 1}`;
+
+                const statSpan = document.createElement('span');
+                statSpan.className = 'dir-stat';
+                const key = `${currentModalPerm}_dir${i}`;
+                if (statsData[key] && statsData[key].total > 0) {
+                    const dirRate = Math.round((statsData[key].correct / statsData[key].total) * 100);
+                    const dirAvgTime = statsData[key].correct > 0 ? (statsData[key].totalTime / statsData[key].correct).toFixed(2) : "0.00";
+                    statSpan.innerHTML = `正答率: ${dirRate}%<br>AvgTime: ${dirAvgTime}s`;
+                } else {
+                    statSpan.innerHTML = `正答率: ---<br>AvgTime: ---`;
+                }
+
+                dirItem.appendChild(canvas);
+                dirItem.appendChild(nameSpan);
+                dirItem.appendChild(statSpan);
+
+                dirItem.onclick = function() {
+                    permStates[currentModalPerm][i] = !permStates[currentModalPerm][i];
+                    dirItem.className = `dir-item ${permStates[currentModalPerm][i] ? 'active' : ''}`;
+                    const tile = document.querySelector(`.perm-tile[data-perm="${currentModalPerm}"]`);
+                    if (tile) updateTileVisual(tile, currentModalPerm);
+                };
+
+                dirGrid.appendChild(dirItem);
+            }
+        }
+
+        function toggleModalDirections(status) {
+            if (!currentModalPerm) return;
+            permStates[currentModalPerm] = [status, status, status, status];
+            renderModalDirections();
+            const tile = document.querySelector(`.perm-tile[data-perm="${currentModalPerm}"]`);
+            if (tile) updateTileVisual(tile, currentModalPerm);
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').style.display = 'none';
+            currentModalPerm = null;
+            initTileGrid();
+        }
+
+        function openStatsModal() {
+            renderStatsTable();
+            document.getElementById('statsModalOverlay').style.display = 'flex';
+        }
+
+        function closeStatsModal() {
+            document.getElementById('statsModalOverlay').style.display = 'none';
+        }
+
+        function switchStatsTab(tabName) {
+            currentStatsTab = tabName;
+            document.getElementById('tabOverallBtn').className = `stats-tab-btn ${tabName === 'overall' ? 'active' : ''}`;
+            document.getElementById('tabDirBtn').className = `stats-tab-btn ${tabName === 'direction' ? 'active' : ''}`;
+            
+            currentSortColumn = 'name';
+            currentSortAsc = true;
+            
+            renderStatsTable();
+        }
+
+        function sortStats(column) {
+            if (currentSortColumn === column) {
+                currentSortAsc = !currentSortAsc;
+            } else {
+                currentSortColumn = column;
+                currentSortAsc = true;
+            }
+            renderStatsTable();
+        }
+
+        function renderStatsTable() {
+            const container = document.getElementById('statsTableContent');
+            container.innerHTML = "";
+
+            const table = document.createElement('table');
+            table.className = 'stats-table';
+
+            function getSortArrow(colName) {
+                if (currentSortColumn !== colName) return '';
+                return `<span class="sort-arrow">${currentSortAsc ? '▲' : '▼'}</span>`;
+            }
+
+            if (currentStatsTab === 'overall') {
+                let dataList = [];
+                for (let permName in pllDatabase) {
+                    const stats = getPermCombinedStats(permName);
+                    dataList.push({
+                        permName: permName,
+                        total: stats ? stats.total : 0,
+                        rate: stats ? stats.rate : -1,       
+                        avgTime: stats ? stats.avgTime : 9999 
+                    });
+                }
+
+                dataList.sort((a, b) => {
+                    let valA, valB;
+                    if (currentSortColumn === 'name') {
+                        valA = a.permName;
+                        valB = b.permName;
+                        return currentSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    } else if (currentSortColumn === 'rate') {
+                        valA = a.rate;
+                        valB = b.rate;
+                    } else if (currentSortColumn === 'time') {
+                        valA = a.avgTime;
+                        valB = b.avgTime;
+                    }
+                    return currentSortAsc ? valA - valB : valB - valA;
+                });
+
+                const thead = document.createElement('thead');
+                thead.innerHTML = `<tr>
+                    <th style="width:40px;">形</th>
+                    <th onclick="sortStats('name')">PLL${getSortArrow('name')}</th>
+                    <th>回数</th>
+                    <th onclick="sortStats('rate')">正答率${getSortArrow('rate')}</th>
+                    <th onclick="sortStats('time')">AvgTime${getSortArrow('time')}</th>
+                </tr>`;
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                dataList.forEach(item => {
+                    const tr = document.createElement('tr');
+                    const stats = getPermCombinedStats(item.permName);
+
+                    const tdCanvas = document.createElement('td');
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 40;
+                    canvas.height = 40;
+                    canvas.className = 'table-canvas';
+                    drawMiniPreview(canvas, pllDatabase[item.permName], 0, false);
+                    tdCanvas.appendChild(canvas);
+
+                    const tdName = document.createElement('td');
+                    tdName.innerHTML = `<strong>${item.permName}</strong>`;
+
+                    const tdTotal = document.createElement('td');
+                    tdTotal.innerText = stats ? `${stats.total}回` : '0回';
+
+                    const tdRate = document.createElement('td');
+                    tdRate.innerText = stats ? `${stats.rate}%` : '---';
+
+                    const tdTime = document.createElement('td');
+                    tdTime.innerText = stats ? `${stats.avgTime.toFixed(2)}s` : '---';
+
+                    tr.appendChild(tdCanvas);
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdTotal);
+                    tr.appendChild(tdRate);
+                    tr.appendChild(tdTime);
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+
+            } else {
+                let dataList = [];
+                const mappedIndices = [0, 9, 3, 6];
+
+                for (let permName in pllDatabase) {
+                    for (let i = 0; i < 4; i++) {
+                        const key = `${permName}_dir${i}`;
+                        const stat = statsData[key];
+                        const total = stat ? stat.total : 0;
+                        const correct = stat ? stat.correct : 0;
+                        const rate = total > 0 ? Math.round((correct / total) * 100) : -1;
+                        const avgTime = correct > 0 ? parseFloat((stat.totalTime / correct).toFixed(2)) : 9999;
+
+                        dataList.push({
+                            permName: permName,
+                            dirIndex: i,
+                            total: total,
+                            rate: rate,
+                            avgTime: avgTime,
+                            rawSlice: (() => {
+                                const cleanData = pllDatabase[permName].replace(/[()]/g, '');
+                                let slice = "";
+                                const startIdx = mappedIndices[i];
+                                for (let j = 0; j < 6; j++) {
+                                    slice += cleanData[(startIdx + j) % 12];
+                                }
+                                return slice;
+                            })()
+                        });
+                    }
+                }
+
+                dataList.sort((a, b) => {
+                    let valA, valB;
+                    if (currentSortColumn === 'name') {
+                        valA = a.permName + a.dirIndex;
+                        valB = b.permName + b.dirIndex;
+                        return currentSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    } else if (currentSortColumn === 'rate') {
+                        valA = a.rate;
+                        valB = b.rate;
+                    } else if (currentSortColumn === 'time') {
+                        valA = a.avgTime;
+                        valB = b.avgTime;
+                    }
+                    return currentSortAsc ? valA - valB : valB - valA;
+                });
+
+                const thead = document.createElement('thead');
+                thead.innerHTML = `<tr>
+                    <th style="width:40px;">形</th>
+                    <th onclick="sortStats('name')">PLL / 向き${getSortArrow('name')}</th>
+                    <th>回数</th>
+                    <th onclick="sortStats('rate')">正答率${getSortArrow('rate')}</th>
+                    <th onclick="sortStats('time')">AvgTime${getSortArrow('time')}</th>
+                </tr>`;
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                dataList.forEach(item => {
+                    const tr = document.createElement('tr');
+
+                    const tdCanvas = document.createElement('td');
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 40;
+                    canvas.height = 40;
+                    canvas.className = 'table-canvas';
+                    drawSpecificIsometricCubeForTable(canvas, item.rawSlice);
+                    tdCanvas.appendChild(canvas);
+
+                    const tdName = document.createElement('td');
+                    tdName.innerHTML = `<strong>${item.permName}</strong> <span style="color:#aaa; font-size:10px;">(向き${item.dirIndex + 1})</span>`;
+
+                    const tdTotal = document.createElement('td');
+                    tdTotal.innerText = `${item.total}回`;
+
+                    const tdRate = document.createElement('td');
+                    tdRate.innerText = item.rate !== -1 ? `${item.rate}%` : '---';
+
+                    const tdTime = document.createElement('td');
+                    tdTime.innerText = item.avgTime !== 9999 ? `${item.avgTime.toFixed(2)}s` : '---';
+
+                    tr.appendChild(tdCanvas);
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdTotal);
+                    tr.appendChild(tdRate);
+                    tr.appendChild(tdTime);
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+            }
+
+            container.appendChild(table);
+        }
+
+        function drawSpecificIsometricCubeForTable(canvas, rawSlice) {
+            const yellowSideHexMap = {  
+                '1': '#ff8800', 
+                '2': '#00a2ff', 
+                '3': '#ff3333',
+                '4': '#00cc66'  
+            };
+            const uHex = COLORS['yellow'].hex;
+            const defaultGray = '#555555';
+
+            const fSideNums = rawSlice.slice(0, 3);
+            const rSideNums = rawSlice.slice(3, 6);
+
+            const uGrid = [[uHex,uHex,uHex],[uHex,uHex,uHex],[uHex,uHex,uHex]];
+            const fGrid = [
+                [ yellowSideHexMap[fSideNums[0]], yellowSideHexMap[fSideNums[1]], yellowSideHexMap[fSideNums[2]] ],
+                [ defaultGray, defaultGray, defaultGray ],
+                [ defaultGray, defaultGray, defaultGray ]
+            ];
+            const rGrid = [
+                [ yellowSideHexMap[rSideNums[0]], yellowSideHexMap[rSideNums[1]], yellowSideHexMap[rSideNums[2]] ],
+                [ defaultGray, defaultGray, defaultGray ],
+                [ defaultGray, defaultGray, defaultGray ]
+            ];
+
+            drawSpecificIsometricCube(canvas, uGrid, fGrid, rGrid, 7, 20, 24);
+        }
+
+        function parsePatternString(str) {
+            let result = [];
+            let i = 0;
+            while (i < str.length) {
+                if (str[i] === '(') {
+                    let closeIdx = str.indexOf(')', i);
+                    if (closeIdx !== -1) {
+                        let val = str.substring(i + 1, closeIdx);
+                        result.push({ val: val, colored: true });
+                        i = closeIdx + 1;
+                    } else {
+                        result.push({ val: str[i], colored: false });
+                        i++;
+                    }
+                } else {
+                    result.push({ val: str[i], colored: false });
+                    i++;
+                }
+            }
+            return result;
+        }
+
+        function drawMiniPreview(canvas, dataStr, startIndexIdx, isAnswerTile) {
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const yellowSideHexMap = {  
+                '1': '#ff8800', 
+                '2': '#00a2ff', 
+                '3': '#ff3333',
+                '4': '#00cc66'
+            };
+
+            const s = canvas.width / 5, ox = canvas.width / 5, oy = canvas.height / 5;
+            const defaultGray = '#555555';
+
+            if (!isAnswerTile) {
+                const cleanStr = dataStr.replace(/[()]/g, '');
+                let shifted = "";
+                for (let j = 0; j < 12; j++) {
+                    shifted += cleanStr[(startIndexIdx + j) % 12];
+                }
+                const uColor = '#ffd700';
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        ctx.fillStyle = uColor;
+                        ctx.fillRect(ox + c * s, oy + r * s, s - 1, s - 1);
+                    }
+                }
+                const topColors    = [yellowSideHexMap[shifted[2]], yellowSideHexMap[shifted[1]], yellowSideHexMap[shifted[0]]];
+                const leftColors   = [yellowSideHexMap[shifted[3]], yellowSideHexMap[shifted[4]], yellowSideHexMap[shifted[5]]];
+                const bottomColors = [yellowSideHexMap[shifted[6]], yellowSideHexMap[shifted[7]], yellowSideHexMap[shifted[8]]];
+                const rightColors  = [yellowSideHexMap[shifted[11]], yellowSideHexMap[shifted[10]], yellowSideHexMap[shifted[9]]];
+
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = topColors[i] || '#fff';
+                    ctx.fillRect(ox + i * s, oy - 4, s - 1, 3);
+                }
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = leftColors[i] || '#fff';
+                    ctx.fillRect(ox - 4, oy + i * s, 3, s - 1);
+                }
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = bottomColors[i] || '#fff';
+                    ctx.fillRect(ox + i * s, oy + 3 * s + 1, s - 1, 3);
+                }
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = rightColors[i] || '#fff';
+                    ctx.fillRect(ox + 3 * s + 1, oy + i * s, 3, s - 1);
+                }
+            } else {
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        ctx.fillStyle = defaultGray;
+                        ctx.fillRect(ox + c * s, oy + r * s, s - 1, s - 1);
+                    }
+                }
+
+                let parsed = parsePatternString(dataStr);
+                let shifted = [];
+                for (let j = 0; j < 12; j++) {
+                    shifted.push(parsed[(startIndexIdx + j) % 12]);
+                }
+
+                const topObj    = [shifted[2], shifted[1], shifted[0]];
+                const leftObj   = [shifted[3], shifted[4], shifted[5]];
+                const bottomObj = [shifted[6], shifted[7], shifted[8]];
+                const rightObj  = [shifted[11], shifted[10], shifted[9]];
+
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = topObj[i].colored ? (yellowSideHexMap[topObj[i].val] || defaultGray) : defaultGray;
+                    ctx.fillRect(ox + i * s, oy - 4, s - 1, 3);
+                }
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = leftObj[i].colored ? (yellowSideHexMap[leftObj[i].val] || defaultGray) : defaultGray;
+                    ctx.fillRect(ox - 4, oy + i * s, 3, s - 1);
+                }
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = bottomObj[i].colored ? (yellowSideHexMap[bottomObj[i].val] || defaultGray) : defaultGray;
+                    ctx.fillRect(ox + i * s, oy + 3 * s + 1, s - 1, 3);
+                }
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = rightObj[i].colored ? (yellowSideHexMap[rightObj[i].val] || defaultGray) : defaultGray;
+                    ctx.fillRect(ox + 3 * s + 1, oy + i * s, 3, s - 1);
+                }
+            }
+        }
+
+        function toggleAllPerms(status) {
+            for (let permName in permStates) {
+                permStates[permName] = [status, status, status, status];
+            }
+            const tiles = document.querySelectorAll('.perm-tile');
+            tiles.forEach(tile => {
+                const permName = tile.dataset.perm;
+                updateTileVisual(tile, permName);
+            });
+            if (currentModalPerm) {
+                renderModalDirections();
+            }
+        }
+
+        function getValidSchemes(uColor) {
+            const layouts = {
+                white:  [['red', 'blue', 'orange', 'green'], ['blue', 'orange', 'green', 'red'], ['orange', 'green', 'red', 'blue'], ['green', 'red', 'blue', 'orange']],
+                yellow: [['red', 'green', 'orange', 'blue'], ['green', 'orange', 'blue', 'red'], ['orange', 'blue', 'red', 'green'], ['blue', 'red', 'green', 'orange']],
+                red:    [['yellow', 'blue', 'white', 'green'], ['blue', 'white', 'green', 'yellow'], ['white', 'green', 'yellow', 'blue'], ['green', 'yellow', 'blue', 'white']],
+                orange: [['yellow', 'green', 'white', 'blue'], ['green', 'white', 'blue', 'yellow'], ['white', 'blue', 'yellow', 'green'], ['blue', 'yellow', 'green', 'white']],
+                blue:   [['yellow', 'orange', 'white', 'red'], ['orange', 'white', 'red', 'yellow'], ['white', 'red', 'yellow', 'orange'], ['red', 'yellow', 'orange', 'white']],
+                green:  [['yellow', 'red', 'white', 'orange'], ['red', 'white', 'orange', 'yellow'], ['white', 'orange', 'yellow', 'red'], ['orange', 'yellow', 'red', 'white']]
+            };
+
+            const options = layouts[uColor] || layouts['white'];
+            const chosen = options[Math.floor(Math.random() * options.length)];
+            
+            return {
+                1: COLORS[chosen[0]].hex, 
+                2: COLORS[chosen[1]].hex, 
+                3: COLORS[chosen[2]].hex, 
+                4: COLORS[chosen[3]].hex  
+            };
+        }
+
+        function onActionButtonClick() {
+            const btn = document.getElementById('actionBtn');
+            if (!isRunning) {
+                document.querySelectorAll('.answer-tile').forEach(t => t.style.borderColor = '#444');
+                generateNewProblem();
+            } else {
+                stopTimer();
+                btn.innerText = "Start!";
+                btn.classList.remove("stop-state");
+                document.getElementById('info').innerText = "";
+            }
+        }
+
+        function generateNewProblem() {
+            let availableProblems = [];
+            const indices = [0, 9, 3, 6];
+
+            for (let permName in permStates) {
+                for (let i = 0; i < 4; i++) {
+                    if (permStates[permName][i]) {
+                        availableProblems.push({
+                            permName: permName,
+                            dirIndex: i,
+                            startIndex: indices[i]
+                        });
+                    }
+                }
+            }
+
+            if (availableProblems.length === 0) {
+                document.getElementById('info').innerText = "⚠️ 出題可能なパーム・向きが1つも選択されていません！";
+                return;
+            }
+
+            currentProblem = availableProblems[Math.floor(Math.random() * availableProblems.length)];
+            const rawData = pllDatabase[currentProblem.permName];
+            const cleanData = rawData.replace(/[()]/g, '');
+            
+            let sliceStr = "";
+            for (let i = 0; i < 6; i++) {
+                sliceStr += cleanData[(currentProblem.startIndex + i) % 12];
+            }
+            
+            const randomCross = activeCrossColors[Math.floor(Math.random() * activeCrossColors.length)];
+            const uColorName = COLORS[randomCross].opp;
+            const uColorHex = COLORS[uColorName].hex;
+
+            const scheme = getValidSchemes(uColorName);
+
+            const fSideNums = sliceStr.slice(0, 3);
+            const rSideNums = sliceStr.slice(3, 6);
+
+            const uGrid = [
+                [uColorHex, uColorHex, uColorHex],
+                [uColorHex, uColorHex, uColorHex],
+                [uColorHex, uColorHex, uColorHex]
+            ];
+
+            const fGrid = [
+                [ scheme[fSideNums[0]], scheme[fSideNums[1]], scheme[fSideNums[2]] ],
+                [ scheme[1], scheme[1], scheme[1] ],
+                [ scheme[1], scheme[1], scheme[1] ]
+            ];
+
+            const rGrid = [
+                [ scheme[rSideNums[0]], scheme[rSideNums[1]], scheme[rSideNums[2]] ],
+                [ scheme[2], scheme[2], scheme[2] ],
+                [ scheme[2], scheme[2], scheme[2] ]
+            ];
+
+            const mainCanvas = document.getElementById('cubeCanvas');
+            // アイソメ図の角度を変更した投影設定（サイズ・オフセット調整）
+            drawSpecificIsometricCube(mainCanvas, uGrid, fGrid, rGrid, 28, 120, 100);
+            
+            document.getElementById('info').innerText = "";
+
+            isRunning = true;
+            const btn = document.getElementById('actionBtn');
+            btn.innerText = "Stop!";
+            btn.classList.add("stop-state");
+
+            startTime = performance.now();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const now = performance.now();
+                elapsedSeconds = (now - startTime) / 1000;
+                document.getElementById('timerDisplay').innerText = elapsedSeconds.toFixed(2) + "s";
+            }, 10);
+        }
+
+        function stopTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+        }
+
+        function recordResult(permName, dirIndex, isCorrect, time) {
+            const key = `${permName}_dir${dirIndex}`;
+            if (!statsData[key]) {
+                statsData[key] = { total: 0, correct: 0, totalTime: 0 };
+            }
+            statsData[key].total++;
+            if (isCorrect) {
+                statsData[key].correct++;
+                statsData[key].totalTime += time;
+            }
+            saveStats();
+            updateDashboard();
+        }
+
+        function handleAnswer(selectedPerm, clickedTile) {
+            if (!isRunning || !currentProblem) return;
+
+            const infoEl = document.getElementById('info');
+            const btn = document.getElementById('actionBtn');
+
+            document.querySelectorAll('.answer-tile').forEach(t => t.style.borderColor = '#444');
+
+            const isCorrect = (selectedPerm === currentProblem.permName);
+            const timeVal = elapsedSeconds;
+
+            recordResult(currentProblem.permName, currentProblem.dirIndex, isCorrect, timeVal);
+
+            if (isCorrect) {
+                stopTimer();
+                btn.innerText = "Start!";
+                btn.classList.remove("stop-state");
+                
+                clickedTile.style.borderColor = '#00a2ff';
+
+                infoEl.style.color = "#4ade80";
+                infoEl.innerText = `🎉 正解！ (${currentProblem.permName}) - タイム: ${timeVal.toFixed(2)}秒`;
+                currentProblem = null;
+            } else {
+                stopTimer();
+                btn.innerText = "Start!";
+                btn.classList.remove("stop-state");
+
+                clickedTile.style.borderColor = '#ff3333';
+
+                const correctTile = document.querySelector(`.answer-tile[data-perm="${currentProblem.permName}"]`);
+                if (correctTile) {
+                    correctTile.style.borderColor = '#00a2ff';
+                }
+
+                infoEl.style.color = "#f87171";
+                infoEl.innerText = `❌ 不正解！ 正解は ${currentProblem.permName} でした (タイム: ${timeVal.toFixed(2)}秒)`;
+                currentProblem = null;
+            }
+
+            initTileGrid();
+            if (document.getElementById('statsModalOverlay').style.display === 'flex') {
+                renderStatsTable();
+            }
+        }
+
+        function toggleTimerVisibility() {
+            const isChecked = document.getElementById('timerToggle').checked;
+            const timerEl = document.getElementById('timerDisplay');
+            if (isChecked) {
+                timerEl.classList.remove('hidden');
+            } else {
+                timerEl.classList.add('hidden');
+            }
+        }
+
+        function drawSpecificIsometricCube(canvas, u, f, r, size, ox, oy) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let z = 0; z < 3; z++) {
+                for (let x = 0; x < 3; x++) {
+                    const invZ = 2 - z; 
+                    const p1 = isoProj(x, 3, invZ, size, ox, oy);
+                    const p2 = isoProj(x + 1, 3, invZ, size, ox, oy);
+                    const p3 = isoProj(x + 1, 3, invZ + 1, size, ox, oy);
+                    const p4 = isoProj(x, 3, invZ + 1, size, ox, oy);
+                    drawPolygon(ctx, [p1, p2, p3, p4], f[z][x]);
+                }
+            }
+
+            for (let z = 0; z < 3; z++) {
+                for (let y = 0; y < 3; y++) {
+                    const invZ = 2 - z;
+                    const invY = 2 - y;
+                    const p1 = isoProj(3, invY, invZ, size, ox, oy);
+                    const p2 = isoProj(3, invY + 1, invZ, size, ox, oy);
+                    const p3 = isoProj(3, invY + 1, invZ + 1, size, ox, oy);
+                    const p4 = isoProj(3, invY, invZ + 1, size, ox, oy);
+                    drawPolygon(ctx, [p1, p2, p3, p4], r[z][y]); 
+                }
+            }
+
+            for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    const p1 = isoProj(x, y, 3, size, ox, oy);     
+                    const p2 = isoProj(x + 1, y, 3, size, ox, oy);
+                    const p3 = isoProj(x + 1, y + 1, 3, size, ox, oy);
+                    const p4 = isoProj(x, y + 1, 3, size, ox, oy);
+                    drawPolygon(ctx, [p1, p2, p3, p4], u[y][x]);
+                }
+            }
+        }
+
+        // 立体感を調整したアイソメ図の投影式
+        function isoProj(x, y, z, size, ox, oy) {
+            const angleX = Math.PI / 6;  
+            const angleY = Math.PI / 6;  
+            const isoX = ox + (x - y) * Math.cos(angleX) * size;
+            const isoY = oy + (x + y) * Math.sin(angleY) * (size * 0.55) - (z * size * 0.9);
+            return { x: isoX, y: isoY };
+        }
+
+        function drawPolygon(ctx, points, fillColor) {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+            ctx.strokeStyle = STROKE_COLOR;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        initCrossColorPicker();
+        initTileGrid();
+        initAnswerGrid();
+        updateDashboard();
+    </script>
+
+</body>
+</html>
