@@ -361,9 +361,10 @@
             max-width: 520px;
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            max-height: 90vh;
+            height: 90vh;
             display: flex;
             flex-direction: column;
+            box-sizing: border-box;
         }
         .stats-tabs {
             display: flex;
@@ -388,7 +389,6 @@
         .stats-table-container {
             flex-grow: 1;
             overflow-y: auto;
-            max-height: 90vh;
             border: 1px solid #444;
             border-radius: 6px;
             background: #222;
@@ -400,7 +400,7 @@
             text-align: left;
         }
         .stats-table th, .stats-table td {
-            padding: 8px;
+            padding: 1px 8px;
             border-bottom: 1px solid #333;
             vertical-align: middle;
         }
@@ -431,6 +431,7 @@
             display: block;
         }
     </style>
+
     <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -861,7 +862,7 @@
                     [ defaultGray, defaultGray, defaultGray ]
                 ];
 
-                drawSpecificIsometricCube(canvas, uGrid, fGrid, rGrid, 11, 45, 38);
+                drawSpecificIsometricCube(canvas, uGrid, fGrid, rGrid, 16, 45, 50);
 
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'dir-name';
@@ -967,6 +968,9 @@
                         valA = a.permName;
                         valB = b.permName;
                         return currentSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    } else if (currentSortColumn === 'total') {
+                        valA = a.total;
+                        valB = b.total;
                     } else if (currentSortColumn === 'rate') {
                         valA = a.rate;
                         valB = b.rate;
@@ -981,7 +985,7 @@
                 thead.innerHTML = `<tr>
                     <th style="width:40px;">形</th>
                     <th onclick="sortStats('name')">PLL${getSortArrow('name')}</th>
-                    <th>回数</th>
+                    <th onclick="sortStats('total')">回数${getSortArrow('total')}</th>
                     <th onclick="sortStats('rate')">正答率${getSortArrow('rate')}</th>
                     <th onclick="sortStats('time')">AvgTime${getSortArrow('time')}</th>
                 </tr>`;
@@ -1059,6 +1063,9 @@
                         valA = a.permName + a.dirIndex;
                         valB = b.permName + b.dirIndex;
                         return currentSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    } else if (currentSortColumn === 'total') {
+                        valA = a.total;
+                        valB = b.total;
                     } else if (currentSortColumn === 'rate') {
                         valA = a.rate;
                         valB = b.rate;
@@ -1073,7 +1080,7 @@
                 thead.innerHTML = `<tr>
                     <th style="width:40px;">形</th>
                     <th onclick="sortStats('name')">PLL / 向き${getSortArrow('name')}</th>
-                    <th>回数</th>
+                    <th onclick="sortStats('total')">回数${getSortArrow('total')}</th>
                     <th onclick="sortStats('rate')">正答率${getSortArrow('rate')}</th>
                     <th onclick="sortStats('time')">AvgTime${getSortArrow('time')}</th>
                 </tr>`;
@@ -1085,8 +1092,8 @@
 
                     const tdCanvas = document.createElement('td');
                     const canvas = document.createElement('canvas');
-                    canvas.width = 40;
-                    canvas.height = 40;
+                    canvas.width = 45;
+                    canvas.height = 45;
                     canvas.className = 'table-canvas';
                     drawSpecificIsometricCubeForTable(canvas, item.rawSlice);
                     tdCanvas.appendChild(canvas);
@@ -1141,7 +1148,7 @@
                 [ defaultGray, defaultGray, defaultGray ]
             ];
 
-            drawSpecificIsometricCube(canvas, uGrid, fGrid, rGrid, 7, 20, 24);
+            drawSpecificIsometricCube(canvas, uGrid, fGrid, rGrid, 9, 22, 28);
         }
 
         function parsePatternString(str) {
@@ -1359,8 +1366,7 @@
             ];
 
             const mainCanvas = document.getElementById('cubeCanvas');
-            // アイソメ図の角度を変更した投影設定（サイズ・オフセット調整）
-            drawSpecificIsometricCube(mainCanvas, uGrid, fGrid, rGrid, 28, 120, 100);
+            drawSpecificIsometricCube(mainCanvas, uGrid, fGrid, rGrid, 35, 120, 100);
             
             document.getElementById('info').innerText = "";
 
@@ -1418,7 +1424,7 @@
                 clickedTile.style.borderColor = '#00a2ff';
 
                 infoEl.style.color = "#4ade80";
-                infoEl.innerText = `🎉 正解！ (${currentProblem.permName}) - タイム: ${timeVal.toFixed(2)}秒`;
+                infoEl.innerText = `正解！ (${currentProblem.permName}) - タイム: ${timeVal.toFixed(2)}秒`;
                 currentProblem = null;
             } else {
                 stopTimer();
@@ -1433,7 +1439,7 @@
                 }
 
                 infoEl.style.color = "#f87171";
-                infoEl.innerText = `❌ 不正解！ 正解は ${currentProblem.permName} でした (タイム: ${timeVal.toFixed(2)}秒)`;
+                infoEl.innerText = `不正解！ 正解は ${currentProblem.permName} でした (タイム: ${timeVal.toFixed(2)}秒)`;
                 currentProblem = null;
             }
 
@@ -1491,10 +1497,9 @@
             }
         }
 
-        // 立体感を調整したアイソメ図の投影式
         function isoProj(x, y, z, size, ox, oy) {
-            const angleX = Math.PI / 6;  
-            const angleY = Math.PI / 6;  
+            const angleX = Math.PI / 4;  
+            const angleY = Math.PI / 7;  
             const isoX = ox + (x - y) * Math.cos(angleX) * size;
             const isoY = oy + (x + y) * Math.sin(angleY) * (size * 0.55) - (z * size * 0.9);
             return { x: isoX, y: isoY };
