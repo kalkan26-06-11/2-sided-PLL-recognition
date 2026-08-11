@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PLL二面判断トレーナー</title>
+    <title>PLL 2側面判断トレーナー</title>
     <style>
         body {
             font-family: sans-serif;
@@ -28,27 +28,30 @@
             border-radius: 6px;
         }
         
-        /* スタート／ストップボタンを回答タイルの下に画面幅いっぱいで配置 */
         button#actionBtn {
             width: 100%;
             padding: 14px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            background: #0d6efd;
+            background: #2e2e2e;
             color: white;
-            border: none;
+            border: 2px solid #444;
             border-radius: 6px;
             margin: 5px 0;
-            transition: 0.2s;
             box-sizing: border-box;
         }
-        button#actionBtn:hover { background: #0b5ed7; }
+        button#actionBtn:hover { 
+            background: #2e2e2e; 
+            border-color: #444;
+        }
         button#actionBtn.stop-state {
-            background: #dc3545;
+            background: #2e2e2e;
+            border: 2px solid #444;
         }
         button#actionBtn.stop-state:hover {
-            background: #bb2d3b;
+            background: #2e2e2e;
+            border-color: #444;
         }
 
         button {
@@ -291,7 +294,7 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.7);
-            z-index: 100;
+            z-index: 2000;
             justify-content: center;
             align-items: center;
         }
@@ -430,6 +433,77 @@
             border-radius: 3px;
             display: block;
         }
+        .compact-btn {
+            background: #6c757d;
+            padding: 3px 5px;
+            font-size: 12px;
+            font-weight: normal;
+            border-radius: 4px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .compact-btn:hover { background: #5a6268; }
+        
+        /* お気に入り管理モーダル専用のスタイル */
+        .fav-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .fav-modal-content {
+            background: #222;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            color: white;
+            box-sizing: border-box;
+            border: 1px solid #444;
+        }
+        .fav-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2a2a2a;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+        .fav-buttons {
+            display: flex;
+            gap: 4px;
+        }
+        /* お気に入り編集モーダル専用のスタイル */
+        .fav-edit-modal-content {
+            background: #222;
+            padding: 20px;
+            border-radius: 8px;
+            width: 95%;
+            max-width: 500px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            box-sizing: border-box;
+            border: 1px solid #444;
+        }
+        /* 編集モーダル内のタイル表示エリア（スクロール可能に） */
+        #editTileGridContainer {
+            overflow-y: auto;
+            max-height: 50vh;
+            margin: 10px 0;
+            padding: 5px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+        }
     </style>
 
     <script type="text/javascript">
@@ -443,7 +517,7 @@
 <body>
 
     <div class="container">
-        <h2>PLL 二面判断トレーナー</h2>
+        <h2>PLL 2側面判断トレーナー</h2>
         
         <div class="settings-section">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -464,9 +538,9 @@
         <div class="settings-section">
             <div class="accordion-header" onclick="toggleAccordion()">
                 <span>⚙️ 設定</span>
-                <span id="accordionArrow" class="accordion-arrow">▼ 閉じる</span>
+                <span id="accordionArrow" class="accordion-arrow">▶ 開く</span>
             </div>
-            <div id="accordionContent" class="accordion-content open">
+            <div id="accordionContent" class="accordion-content">
                 <!-- 1. タイマー表示切替 -->
                 <div style="padding-top: 5px; border-top: 1px solid #444;">
                     <label style="font-size: 14px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px;">
@@ -482,16 +556,19 @@
 
                 <!-- 3. 出題Perm選択 -->
                 <div>
-                    <div style="margin-bottom: 5px; display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            <strong style="font-size: 14px;">出題するPermの選択:</strong>
-                            <div style="font-size: 12px; color: #aaa; margin-top: 2px;">(四隅のドット＝4方向)</div>
-                        </div>
-                        <div>
-                            <button class="secondary-btn" onclick="toggleAllPerms(true)">全て選択</button>
-                            <button class="secondary-btn" onclick="toggleAllPerms(false)">全て解除</button>
-                        </div>
+                    <div style="margin-bottom: 6px; text-align: left;">
+                        <strong style="font-size: 14px;">出題するPLLの選択:</strong>
+                        <span style="font-size: 12px; color: #aaa; margin-left: 6px;">(四隅のドット＝4方向)</span>
                     </div>
+
+                    <div style="display: flex; gap: 3px; margin-bottom: 6px;">
+                        <button class="compact-btn" onclick="toggleAllPerms(true)">全て選択</button>
+                        <button class="compact-btn" onclick="toggleAllPerms(false)">全て解除</button>
+                        <button class="compact-btn" onclick="openAddFavoriteModal()" style="background: #198754;">お気に入り追加</button>
+                        <button class="compact-btn" onclick="openFavoritesModal()" style="background: #0d6efd;">お気に入りリスト</button>
+                    </div>
+
+                    <!-- タイルグリッド -->
                     <div id="tileGrid" class="tile-grid"></div>
                 </div>
             </div>
@@ -510,7 +587,6 @@
             <div id="answerGrid" class="answer-grid"></div>
         </div>
 
-        <!-- スタート／ストップボタン（回答タイルの下に画面幅いっぱいで配置） -->
         <div>
             <button id="actionBtn" onclick="onActionButtonClick()">Start!</button>
         </div>
@@ -522,8 +598,8 @@
             <h3 id="modalTitle" style="margin-top:0;">Perm 向き選択</h3>
             <div style="font-size: 14px; color: #aaa; margin-bottom: 5px;">出題させたい向きをタップして切り替えてください</div>
             <div style="margin-bottom: 10px;">
-                <button class="secondary-btn" onclick="toggleModalDirections(true)">全て選択</button>
-                <button class="secondary-btn" onclick="toggleModalDirections(false)">全て解除</button>
+                <button class="secondary-btn" onclick="handleModalSelectAll(true)">全て選択</button>
+                <button class="secondary-btn" onclick="handleModalSelectAll(false)">全て解除</button>
             </div>
             <div id="directionGrid" class="direction-grid"></div>
             <button onclick="closeModal()">閉じる</button>
@@ -544,6 +620,47 @@
             <button onclick="closeStatsModal()" style="margin-top:15px; padding:6px 16px; font-size:14px;">閉じる</button>
         </div>
     </div>
+
+    <!-- お気に入りリスト管理モーダル -->
+    <div id="favoritesModal" class="fav-modal">
+        <div class="fav-modal-content">
+            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 16px;">お気に入りリスト</h3>
+            <div id="favoritesListContainer" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
+                <!-- JavaScriptでリストがここに動的に入ります -->
+            </div>
+            <div style="text-align: right;">
+                <button class="compact-btn" onclick="closeFavoritesModal()" style="background: #555; padding: 6px 12px; font-size: 14px;">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- お気に入り編集用モーダル -->
+    <div id="favoritesEditModal" class="fav-modal">
+        <div class="fav-edit-modal-content">
+            <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px;">お気に入りの編集</h3>
+            
+            <!-- タイトル入力 -->
+            <div style="margin-bottom: 10px;">
+                <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">タイトル:</label>
+                <input type="text" id="editFavTitleInput" style="width: 100%; padding: 8px; box-sizing: border-box; background: #333; border: 1px solid #555; color: white; border-radius: 4px; font-size: 14px;">
+            </div>
+
+            <!-- タイル選択エリアのラベル -->
+            <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">出題するPLLの選択 (四隅のドット＝4方向):</label>
+            
+            <!-- 編集用のタイルグリッドがここに入る -->
+            <div id="editTileGridContainer">
+                <div id="editTileGrid" class="tile-grid"></div>
+            </div>
+
+            <!-- アクションボタン群 -->
+            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
+                <button class="compact-btn" onclick="closeEditFavoriteModal()" style="background: #555; padding: 6px 14px; font-size: 14px;">キャンセル</button>
+                <button class="compact-btn" onclick="saveEditedFavorite()" style="background: #198754; padding: 6px 14px; font-size: 14px;">上書き保存</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         const pllDatabase = {
@@ -674,10 +791,11 @@
             
             for (let colorName in COLORS) {
                 const box = document.createElement('div');
-                box.className = 'cross-box selected';
+                const isDefaultWhite = (colorName === 'white');
+                box.className = `cross-box ${isDefaultWhite ? 'selected' : ''}`;
                 box.style.backgroundColor = COLORS[colorName].hex;
                 box.dataset.color = colorName;
-                box.innerHTML = "✓";
+                box.innerHTML = isDefaultWhite ? "✓" : "";
 
                 box.onclick = function() {
                     const isSelected = this.classList.contains('selected');
@@ -808,6 +926,7 @@
 
         function openModal(permName) {
             currentModalPerm = permName;
+            currentEditingPermName = null; // 編集用をクリア
             document.getElementById('modalTitle').innerText = `${permName} の向き選択`;
             renderModalDirections();
             document.getElementById('modalOverlay').style.display = 'flex';
@@ -905,6 +1024,7 @@
         function closeModal() {
             document.getElementById('modalOverlay').style.display = 'none';
             currentModalPerm = null;
+            currentEditingPermName = null;
             initTileGrid();
         }
 
@@ -1519,6 +1639,345 @@
             ctx.stroke();
         }
 
+        // --- お気に入り機能関連 ---
+
+        let editingFavId = null;
+        let editingPermStates = {}; // 編集中の一時データ
+        let currentEditingPermName = null; // 編集中のパーム名
+
+       // 現在の選択状態をお気に入りに追加
+        function openAddFavoriteModal() {
+            let favorites = JSON.parse(localStorage.getItem('pll_trainer_favorites')) || [];
+
+            // すでに存在するタイトルから「マイパターン X」の最大番号を自動検出し、次の連番を決める
+            let baseName = "マイパターン";
+            let maxNum = 0;
+
+            favorites.forEach(fav => {
+                // 「マイパターン 数字」の形式にマッチするか調べる
+                let match = fav.title.match(/^マイパターン\s*(\d+)$/);
+                if (match) {
+                    let num = parseInt(match[1], 10);
+                    if (num > maxNum) maxNum = num;
+                }
+            });
+
+            // 次のデフォルトタイトルを自動生成（例：マイパターン 1, マイパターン 2...）
+            let defaultTitle = `${baseName} ${maxNum + 1}`;
+
+            const title = prompt("お気に入りリストのタイトルを入力してください：", defaultTitle);
+            if (!title) return;
+
+            // 現在の permStates をディープコピーして保存
+            favorites.push({
+                id: 'fav_' + Date.now(),
+                title: title,
+                permStates: JSON.parse(JSON.stringify(permStates))
+            });
+
+            localStorage.setItem('pll_trainer_favorites', JSON.stringify(favorites));
+            alert("お気に入りに追加しました！");
+        }
+
+        // お気に入りリストモーダルを開く
+        function openFavoritesModal() {
+            renderFavoritesList();
+            document.getElementById('favoritesModal').style.display = 'flex';
+        }
+
+        // お気に入りリストモーダルを閉じる
+        function closeFavoritesModal() {
+            document.getElementById('favoritesModal').style.display = 'none';
+        }
+
+        // リストの中身を再描画
+        function renderFavoritesList() {
+            const container = document.getElementById('favoritesListContainer');
+            container.innerHTML = "";
+
+            let favorites = JSON.parse(localStorage.getItem('pll_trainer_favorites')) || [];
+
+            if (favorites.length === 0) {
+                container.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">保存されたお気に入りはまだありません</div>';
+                return;
+            }
+
+            favorites.forEach((fav) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'fav-item';
+
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = fav.title;
+                titleSpan.style.fontSize = '14px';
+                itemDiv.appendChild(titleSpan);
+
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'fav-buttons';
+
+                // 適用ボタン
+                const applyBtn = document.createElement('button');
+                applyBtn.className = 'compact-btn';
+                applyBtn.textContent = '適用';
+                applyBtn.style.background = '#0d6efd';
+                applyBtn.onclick = function() {
+                    applyFavorite(fav.id);
+                };
+
+                // 編集ボタン
+                const editBtn = document.createElement('button');
+                editBtn.className = 'compact-btn';
+                editBtn.textContent = '編集';
+                editBtn.style.background = '#ffc107';
+                editBtn.style.color = '#000';
+                editBtn.onclick = function() {
+                    openEditFavoriteModal(fav.id);
+                };
+
+                // 削除ボタン
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'compact-btn';
+                deleteBtn.textContent = '削除';
+                deleteBtn.style.background = '#dc3545';
+                deleteBtn.onclick = function() {
+                    deleteFavorite(fav.id);
+                };
+
+                btnContainer.appendChild(applyBtn);
+                btnContainer.appendChild(editBtn);
+                btnContainer.appendChild(deleteBtn);
+                itemDiv.appendChild(btnContainer);
+
+                container.appendChild(itemDiv);
+            });
+        }
+
+        // お気に入りを適用する
+        function applyFavorite(id) {
+            let favorites = JSON.parse(localStorage.getItem('pll_trainer_favorites')) || [];
+            const target = favorites.find(f => f.id === id);
+            if (!target) return;
+
+            permStates = JSON.parse(JSON.stringify(target.permStates));
+            initTileGrid();
+            
+            closeFavoritesModal();
+            alert(`「${target.title}」を適用しました！`);
+        }
+
+        // --- 編集モーダル関連の処理 ---
+
+        function openEditFavoriteModal(id) {
+            let favorites = JSON.parse(localStorage.getItem('pll_trainer_favorites')) || [];
+            const target = favorites.find(f => f.id === id);
+            if (!target) return;
+
+            editingFavId = id;
+            document.getElementById('editFavTitleInput').value = target.title;
+            editingPermStates = JSON.parse(JSON.stringify(target.permStates));
+
+            closeFavoritesModal();
+            document.getElementById('favoritesEditModal').style.display = 'flex';
+
+            renderEditTileGrid();
+        }
+
+        function closeEditFavoriteModal() {
+            document.getElementById('favoritesEditModal').style.display = 'none';
+            openFavoritesModal();
+        }
+
+        function renderEditTileGrid() {
+            const grid = document.getElementById('editTileGrid');
+            grid.innerHTML = "";
+
+            for (let permName in pllDatabase) {
+                const tile = document.createElement('div');
+                tile.className = 'perm-tile';
+                tile.dataset.perm = permName;
+
+                const dotClasses = ['dot-tl', 'dot-tr', 'dot-bl', 'dot-br'];
+                for (let i = 0; i < 4; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = `corner-dot ${dotClasses[i]}`;
+                    tile.appendChild(dot);
+                }
+
+                updateEditTileVisual(tile, permName);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 60;
+                canvas.height = 60;
+                canvas.className = 'tile-canvas select-tile-canvas';
+                drawMiniPreview(canvas, pllDatabase[permName], 0, false);
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'tile-name';
+                nameDiv.innerText = permName.replace('-Perm', '');
+
+                tile.appendChild(canvas);
+                tile.appendChild(nameDiv);
+
+                tile.onclick = function() {
+                    openEditModalForPerm(permName);
+                };
+
+                grid.appendChild(tile);
+            }
+        }
+
+        function updateEditTileVisual(tile, permName) {
+            const states = editingPermStates[permName] || [false, false, false, false];
+            const hasActiveDir = states.some(val => val);
+            
+            if (hasActiveDir) {
+                tile.classList.add('selected');
+            } else {
+                tile.classList.remove('selected');
+            }
+
+            const dots = tile.querySelectorAll('.corner-dot');
+            for (let i = 0; i < 4; i++) {
+                if (states[i]) {
+                    dots[i].classList.add('active');
+                } else {
+                    dots[i].classList.remove('active');
+                }
+            }
+        }
+
+        function openEditModalForPerm(permName) {
+            currentEditingPermName = permName;
+            currentModalPerm = null; 
+            document.getElementById('modalTitle').innerText = `[編集中] ${permName} の向き選択`;
+            renderEditModalDirections();
+            document.getElementById('modalOverlay').style.display = 'flex';
+        }
+
+        function renderEditModalDirections() {
+            const dirGrid = document.getElementById('directionGrid');
+            dirGrid.innerHTML = "";
+
+            const targetData = pllDatabase[currentEditingPermName];
+            const cleanData = targetData.replace(/[()]/g, '');
+            const mappedIndices = [0, 9, 3, 6];
+
+            const yellowSideHexMap = {  
+                '1': '#ff8800', 
+                '2': '#00a2ff', 
+                '3': '#ff3333',
+                '4': '#00cc66'  
+            };
+            const uHex = COLORS['yellow'].hex;
+            const defaultGray = '#555555';
+
+            for (let i = 0; i < 4; i++) {
+                const isActive = editingPermStates[currentEditingPermName][i];
+                const dirItem = document.createElement('div');
+                dirItem.className = `dir-item ${isActive ? 'active' : ''}`;
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 90;
+                canvas.height = 80;
+
+                let rawSlice = "";
+                const startIdx = mappedIndices[i];
+                for (let j = 0; j < 6; j++) {
+                    rawSlice += cleanData[(startIdx + j) % 12];
+                }
+
+                const fSideNums = rawSlice.slice(0, 3);
+                const rSideNums = rawSlice.slice(3, 6);
+
+                const uGrid = [[uHex,uHex,uHex],[uHex,uHex,uHex],[uHex,uHex,uHex]];
+                const fGrid = [
+                    [ yellowSideHexMap[fSideNums[0]], yellowSideHexMap[fSideNums[1]], yellowSideHexMap[fSideNums[2]] ],
+                    [ defaultGray, defaultGray, defaultGray ],
+                    [ defaultGray, defaultGray, defaultGray ]
+                ];
+                const rGrid = [
+                    [ yellowSideHexMap[rSideNums[0]], yellowSideHexMap[rSideNums[1]], yellowSideHexMap[rSideNums[2]] ],
+                    [ defaultGray, defaultGray, defaultGray ],
+                    [ defaultGray, defaultGray, defaultGray ]
+                ];
+
+                drawSpecificIsometricCube(canvas, uGrid, fGrid, rGrid, 16, 45, 50);
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'dir-name';
+                nameSpan.innerText = `向き ${i + 1}`;
+
+                const statSpan = document.createElement('span');
+                statSpan.className = 'dir-stat';
+                statSpan.innerHTML = isActive ? `<span style="color:#4ade80;">出題する</span>` : `<span style="color:#888;">除外中</span>`;
+
+                dirItem.appendChild(canvas);
+                dirItem.appendChild(nameSpan);
+                dirItem.appendChild(statSpan);
+
+                dirItem.onclick = function() {
+                    editingPermStates[currentEditingPermName][i] = !editingPermStates[currentEditingPermName][i];
+                    renderEditModalDirections();
+                    
+                    const editTile = document.querySelector(`#editTileGrid .perm-tile[data-perm="${currentEditingPermName}"]`);
+                    if (editTile) updateEditTileVisual(editTile, currentEditingPermName);
+                };
+
+                dirGrid.appendChild(dirItem);
+            }
+        }
+
+        // 編集画面用の全て選択／全て解除関数
+        function toggleEditModalDirections(status) {
+            if (!currentEditingPermName) return;
+            editingPermStates[currentEditingPermName] = [status, status, status, status];
+            renderEditModalDirections();
+            
+            const editTile = document.querySelector(`#editTileGrid .perm-tile[data-perm="${currentEditingPermName}"]`);
+            if (editTile) updateEditTileVisual(editTile, currentEditingPermName);
+        }
+
+        // モーダルが「通常」か「編集」かを自動判別して全て選択／解除を実行する関数
+        function handleModalSelectAll(status) {
+            if (currentEditingPermName) {
+                toggleEditModalDirections(status);
+            } else if (currentModalPerm) {
+                toggleModalDirections(status);
+            }
+        }
+
+        // 編集内容を保存する
+        function saveEditedFavorite() {
+            const newTitle = document.getElementById('editFavTitleInput').value.trim();
+            if (!newTitle) {
+                alert("タイトルを入力してください。");
+                return;
+            }
+
+            let favorites = JSON.parse(localStorage.getItem('pll_trainer_favorites')) || [];
+            const target = favorites.find(f => f.id === editingFavId);
+            if (!target) return;
+
+            target.title = newTitle;
+            target.permStates = JSON.parse(JSON.stringify(editingPermStates));
+
+            localStorage.setItem('pll_trainer_favorites', JSON.stringify(favorites));
+            alert("お気に入りを更新しました！");
+
+            closeEditFavoriteModal();
+        }
+
+        // お気に入りを削除する
+        function deleteFavorite(id) {
+            if (!confirm("このお気に入りリストを削除してもよろしいですか？")) return;
+
+            let favorites = JSON.parse(localStorage.getItem('pll_trainer_favorites')) || [];
+            favorites = favorites.filter(f => f.id !== id);
+
+            localStorage.setItem('pll_trainer_favorites', JSON.stringify(favorites));
+            renderFavoritesList();
+        }
+
+        // 初期化処理の実行
         initCrossColorPicker();
         initTileGrid();
         initAnswerGrid();
