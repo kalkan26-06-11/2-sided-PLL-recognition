@@ -642,7 +642,7 @@
             <!-- タイトル入力 -->
             <div style="margin-bottom: 10px;">
                 <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">タイトル:</label>
-                <input type="text" id="editFavTitleInput" autocomplete="off" readonly onfocus="this.removeAttribute('readonly');" style="width: 100%; padding: 8px; box-sizing: border-box; background: #333; border: 1px solid #555; color: white; border-radius: 4px; font-size: 14px;">
+                <textarea id="editFavTitleInput" rows="1" onkeydown="preventNewline(event)" style="width: 100%; padding: 8px; box-sizing: border-box; background: #333; border: 1px solid #555; color: white; border-radius: 4px; font-size: 14px; resize: none; height: 38px; line-height: 20px;"></textarea>
             </div>
 
             <!-- タイル選択エリアのラベル -->
@@ -2026,6 +2026,14 @@
 
             localStorage.setItem('pll_trainer_favorites', JSON.stringify(favorites));
             renderFavoritesList();
+        }
+       // textarea で Enterキーによる改行を禁止し、1行だけに制限する関数
+        function preventNewline(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // 改行の入力を強制キャンセル
+                // もし Enterキーを押したときにそのまま「上書き保存」を実行したい場合は、下の行のコメントアウトを外してください
+                // saveEditedFavorite(); 
+            }
         }
 
         // 初期化処理の実行
