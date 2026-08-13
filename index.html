@@ -403,7 +403,7 @@
             text-align: left;
         }
         .stats-table th, .stats-table td {
-            padding: 1px 8px;
+            padding: 1px 4px;
             border-bottom: 1px solid #333;
             vertical-align: middle;
         }
@@ -617,7 +617,10 @@
             <div class="stats-table-container">
                 <div id="statsTableContent"></div>
             </div>
-            <button onclick="closeStatsModal()" style="margin-top:15px; padding:6px 16px; font-size:14px;">閉じる</button>
+            <div style="margin-top: 15px; display: flex; justify-content: flex-end; gap: 8px;">
+                <button onclick="startTrainingFromSelection()" style="padding: 6px 16px; font-size: 14px; background: #198754; color: white; border: none; border-radius: 6px; cursor: pointer;">選択して練習</button>
+                <button onclick="closeStatsModal()" style="padding: 6px 16px; font-size: 14px;">閉じる</button>
+            </div>
         </div>
     </div>
 
@@ -1108,6 +1111,7 @@
                     <th onclick="sortStats('total')">回数${getSortArrow('total')}</th>
                     <th onclick="sortStats('rate')">正答率${getSortArrow('rate')}</th>
                     <th onclick="sortStats('time')">AvgTime${getSortArrow('time')}</th>
+                    <th style="width:30px; text-align:center;">選択</th>
                 </tr>`;
                 table.appendChild(thead);
 
@@ -1136,11 +1140,21 @@
                     const tdTime = document.createElement('td');
                     tdTime.innerText = stats ? `${stats.avgTime.toFixed(2)}s` : '---';
 
+                    const tdCheck = document.createElement('td');
+                    tdCheck.style.textAlign = 'center';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'stats-checkbox';
+                    checkbox.dataset.type = 'overall';
+                    checkbox.dataset.perm = item.permName;
+                    tdCheck.appendChild(checkbox);
+
                     tr.appendChild(tdCanvas);
                     tr.appendChild(tdName);
                     tr.appendChild(tdTotal);
                     tr.appendChild(tdRate);
                     tr.appendChild(tdTime);
+                    tr.appendChild(tdCheck);
                     tbody.appendChild(tr);
                 });
                 table.appendChild(tbody);
@@ -1203,6 +1217,7 @@
                     <th onclick="sortStats('total')">回数${getSortArrow('total')}</th>
                     <th onclick="sortStats('rate')">正答率${getSortArrow('rate')}</th>
                     <th onclick="sortStats('time')">AvgTime${getSortArrow('time')}</th>
+                    <th style="width:30px; text-align:center;">選択</th>
                 </tr>`;
                 table.appendChild(thead);
 
@@ -1230,11 +1245,22 @@
                     const tdTime = document.createElement('td');
                     tdTime.innerText = item.avgTime !== 9999 ? `${item.avgTime.toFixed(2)}s` : '---';
 
+                    const tdCheck = document.createElement('td');
+                    tdCheck.style.textAlign = 'center';
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'stats-checkbox';
+                    checkbox.dataset.type = 'direction';
+                    checkbox.dataset.perm = item.permName;
+                    checkbox.dataset.dir = item.dirIndex;
+                    tdCheck.appendChild(checkbox);
+
                     tr.appendChild(tdCanvas);
                     tr.appendChild(tdName);
                     tr.appendChild(tdTotal);
                     tr.appendChild(tdRate);
                     tr.appendChild(tdTime);
+                    tr.appendChild(tdCheck);
                     tbody.appendChild(tr);
                 });
                 table.appendChild(tbody);
@@ -1242,6 +1268,105 @@
 
             container.appendChild(table);
         }
+
+        // 成績一覧のチェック状態を反映してトレーニングを開始する関数（修正版）
+function startTrainingFromSelection() {
+    const checkboxes = document.querySelectorAll('.stats-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert("練習する項目にチェックを入れてください。");
+        return;
+    }
+
+    // まず全パームの出題フラグを一旦全てfalseにする
+    for (let permName in permStates) {
+        permStates[permName] = [false, false, false, false];
+    }
+
+    // チェックされた項目を有効化する
+    checkboxes.forEach(cb => {
+        const perm = cb.dataset.perm;
+        const type = cb.dataset.type;
+        if (type === 'overall') {
+            permStates[perm] = [true, true, true, true];
+        } else if (type === 'direction') {
+            const dir = parseInt(cb.dataset.dir, 10);
+            permStates[perm][dir] = true;
+        }
+    });
+
+    // メインのタイル選択画面の状態を更新
+    initTileGrid();
+    closeStatsModal();
+
+    // --- ここから下が変更・追加部分 ---
+    
+    // 1. タイマーを強制的にストップさせる
+    stopTimer();
+
+    // 2. ボタンを「Start!」の状態に戻す
+    const btn = document.getElementById('actionBtn');
+    btn.innerText = "Start!";
+    btn.classList.remove("stop-state");
+
+    // 3. 回答用タイルの選択枠をリセット
+    document.querySelectorAll('.answer-tile').forEach(t => t.style.borderColor = '#444');
+  
+    // 追加. メッセージ欄（#info）を空にする
+    document.getElementById('info').innerText = "";
+
+    // 4. 最初の問題を生成するが、タイマーは動かさない（問題のプレビューだけ表示）
+    let availableProblems = [];
+    const indices = [0, 9, 3, 6];
+
+    for (let permName in permStates) {
+        for (let i = 0; i < 4; i++) {
+            if (permStates[permName][i]) {
+                availableProblems.push({
+                    permName: permName,
+                    dirIndex: i,
+                    startIndex: indices[i]
+                });
+            }
+        }
+    }
+
+    if (availableProblems.length > 0) {
+        currentProblem = availableProblems[Math.floor(Math.random() * availableProblems.length)];
+        const rawData = pllDatabase[currentProblem.permName];
+        const cleanData = rawData.replace(/[()]/g, '');
+        
+        let sliceStr = "";
+        for (let i = 0; i < 6; i++) {
+            sliceStr += cleanData[(currentProblem.startIndex + i) % 12];
+        }
+        
+        const randomCross = activeCrossColors[Math.floor(Math.random() * activeCrossColors.length)];
+        const uColorName = COLORS[randomCross].opp;
+        const uColorHex = COLORS[uColorName].hex;
+        const scheme = getValidSchemes(uColorName);
+
+        const fSideNums = sliceStr.slice(0, 3);
+        const rSideNums = sliceStr.slice(3, 6);
+
+        const uGrid = [[uColorHex,uColorHex,uColorHex],[uColorHex,uColorHex,uColorHex],[uColorHex,uColorHex,uColorHex]];
+        const fGrid = [
+            [ scheme[fSideNums[0]], scheme[fSideNums[1]], scheme[fSideNums[2]] ],
+            [ scheme[1], scheme[1], scheme[1] ],
+            [ scheme[1], scheme[1], scheme[1] ]
+        ];
+        const rGrid = [
+            [ scheme[rSideNums[0]], scheme[rSideNums[1]], scheme[rSideNums[2]] ],
+            [ scheme[2], scheme[2], scheme[2] ],
+            [ scheme[2], scheme[2], scheme[2] ]
+        ];
+
+        const mainCanvas = document.getElementById('cubeCanvas');
+        drawSpecificIsometricCube(mainCanvas, uGrid, fGrid, rGrid, 35, 120, 100);
+        
+        document.getElementById('info5') // （既存のままでOK）
+        document.getElementById('timerDisplay').innerText = "0.00s";
+    }
+}
 
         function drawSpecificIsometricCubeForTable(canvas, rawSlice) {
             const yellowSideHexMap = {  
@@ -1421,10 +1546,19 @@
                 document.querySelectorAll('.answer-tile').forEach(t => t.style.borderColor = '#444');
                 generateNewProblem();
             } else {
+                const infoEl = document.getElementById('info');
+                
+                if (currentProblem) {
+                    infoEl.style.color = "#ffeb3b";
+                    infoEl.innerText = `中断しました。正解は ${currentProblem.permName} でした (タイム: ${elapsedSeconds.toFixed(2)}秒)`;
+                    currentProblem = null;
+                } else {
+                    infoEl.innerText = "";
+                }
+
                 stopTimer();
                 btn.innerText = "Start!";
                 btn.classList.remove("stop-state");
-                document.getElementById('info').innerText = "";
             }
         }
 
@@ -1688,8 +1822,6 @@
             title = title.trim();
             if (!title) return;
 
-            // デフォルト形式（「マイパターン X」）以外の場合は、既存の重複チェックにかける
-            // （もしユーザーが「マイパターン X」と手動入力した場合でも重複しないようにチェックを通すことも可能）
             title = getUniqueTitle(title, favorites);
 
             favorites.push({
@@ -1809,7 +1941,6 @@
             openFavoritesModal();
         }
 
-        // 1. 編集モーダル内のタイルグリッド（21種）に正答率とAvgTimeを表示するように修正
         function renderEditTileGrid() {
             const grid = document.getElementById('editTileGrid');
             grid.innerHTML = "";
@@ -1819,7 +1950,6 @@
                 tile.className = 'perm-tile';
                 tile.dataset.perm = permName;
 
-                // メイン画面と同じ四隅のドットを配置
                 const dotClasses = ['dot-tl', 'dot-tr', 'dot-bl', 'dot-br'];
                 for (let i = 0; i < 4; i++) {
                     const dot = document.createElement('div');
@@ -1827,22 +1957,18 @@
                     tile.appendChild(dot);
                 }
 
-                // 編集中の一時データの状態をタイルの枠やドットに反映
                 updateEditTileVisual(tile, permName);
 
-                // ミニプレビューcanvas
                 const canvas = document.createElement('canvas');
                 canvas.width = 60;
                 canvas.height = 60;
                 canvas.className = 'tile-canvas select-tile-canvas';
                 drawMiniPreview(canvas, pllDatabase[permName], 0, false);
 
-                // パーム名
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'tile-name';
                 nameDiv.innerText = permName.replace('-Perm', '');
 
-                // ★追加：通常の選択画面と同じように成績（正答率・AvgTime）を表示する
                 const statDiv = document.createElement('div');
                 statDiv.className = 'tile-stat';
                 const stats = getPermCombinedStats(permName);
@@ -1854,7 +1980,7 @@
 
                 tile.appendChild(canvas);
                 tile.appendChild(nameDiv);
-                tile.appendChild(statDiv); // 成績表示を追加
+                tile.appendChild(statDiv);
 
                 tile.onclick = function() {
                     openEditModalForPerm(permName);
@@ -1892,7 +2018,6 @@
             document.getElementById('modalOverlay').style.display = 'flex';
         }
 
-        // 2. 編集用の向き選択画面で「出題する/除外中」の代わりにそれぞれの向きの正答率とAvgTimeを表示するように修正
         function renderEditModalDirections() {
             const dirGrid = document.getElementById('directionGrid');
             dirGrid.innerHTML = "";
@@ -1946,7 +2071,6 @@
                 nameSpan.className = 'dir-name';
                 nameSpan.innerText = `向き ${i + 1}`;
 
-                // ★変更：通常の向き選択画面と同じように、その向きごとの成績（正答率・AvgTime）を表示する
                 const statSpan = document.createElement('span');
                 statSpan.className = 'dir-stat';
                 const key = `${currentEditingPermName}_dir${i}`;
@@ -1974,7 +2098,6 @@
             }
         }
 
-        // 編集画面用の全て選択／全て解除関数
         function toggleEditModalDirections(status) {
             if (!currentEditingPermName) return;
             editingPermStates[currentEditingPermName] = [status, status, status, status];
@@ -1984,7 +2107,6 @@
             if (editTile) updateEditTileVisual(editTile, currentEditingPermName);
         }
 
-        // モーダルが「通常」か「編集」かを自動判別して全て選択／解除を実行する関数
         function handleModalSelectAll(status) {
             if (currentEditingPermName) {
                 toggleEditModalDirections(status);
@@ -1993,7 +2115,6 @@
             }
         }
 
-        // 編集内容を保存する
         function saveEditedFavorite() {
             let newTitle = document.getElementById('editFavTitleInput').value.trim();
             if (!newTitle) {
@@ -2005,7 +2126,6 @@
             const target = favorites.find(f => f.id === editingFavId);
             if (!target) return;
 
-            // 編集時：自分自身（editingFavId）以外のリスト内に同じ名前がないかチェックし、あれば枝番をつける
             newTitle = getUniqueTitle(newTitle, favorites, editingFavId);
 
             target.title = newTitle;
@@ -2017,7 +2137,6 @@
             closeEditFavoriteModal();
         }
 
-        // お気に入りを削除する
         function deleteFavorite(id) {
             if (!confirm("このお気に入りリストを削除してもよろしいですか？")) return;
 
@@ -2027,12 +2146,10 @@
             localStorage.setItem('pll_trainer_favorites', JSON.stringify(favorites));
             renderFavoritesList();
         }
-       // textarea で Enterキーによる改行を禁止し、1行だけに制限する関数
+
         function preventNewline(event) {
             if (event.key === 'Enter') {
-                event.preventDefault(); // 改行の入力を強制キャンセル
-                // もし Enterキーを押したときにそのまま「上書き保存」を実行したい場合は、下の行のコメントアウトを外してください
-                // saveEditedFavorite(); 
+                event.preventDefault(); 
             }
         }
 
